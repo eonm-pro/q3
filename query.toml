@@ -1,0 +1,31 @@
+[list]
+[list.lorem]
+value = "lorem\t\tlorem ipsum dolor sit amet"
+separator = " "
+script =  """
+from q3 import *;
+
+value = normalize_spaces(value)
+value = uniq(value)
+value = quote(value)
+value = join_or(value)
+"""
+
+[generator]
+[generator.e]
+script = """
+value = "lorem ipsum from generator"
+"""
+
+[query.query]
+value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e}"
+
+[query.q2]
+value = " title:(#{query}) #{e}"
+
+# [query.q1]
+# value = "lorem ipsum"
+#
+#
+# [query.q2]
+# value = "lorem ipsum #{q1}"
