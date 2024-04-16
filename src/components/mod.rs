@@ -13,6 +13,7 @@ use crate::{
     config::{GeneratorConfig, ListConfig, QueryConfig},
     expand::Expand,
     store::QStore,
+    Q3Error
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -23,13 +24,15 @@ pub enum Q3Components {
 }
 
 impl TryFrom<(Id, ListConfig)> for Q3Components {
-    type Error = Box<dyn std::error::Error>;
+    type Error = Q3Error;
 
     fn try_from(value: (Id, ListConfig)) -> Result<Self, Self::Error> {
         let (id, config) = value;
 
         let value = match config.data {
-            crate::config::PathOrValue::File(path) => std::fs::read_to_string(path)?,
+            crate::config::PathOrValue::File(path) => std::fs::read_to_string(path).map_err(|err| {
+                Q3Error::FailedToReadDataFromDisk(err)
+            })?,
             crate::config::PathOrValue::Value(data) => data,
         };
 
@@ -43,7 +46,7 @@ impl TryFrom<(Id, ListConfig)> for Q3Components {
 }
 
 impl TryFrom<(Id, GeneratorConfig)> for Q3Components {
-    type Error = Box<dyn std::error::Error>;
+    type Error = Q3Error;
 
     fn try_from(value: (Id, GeneratorConfig)) -> Result<Self, Self::Error> {
         let (id, config) = value;
@@ -59,7 +62,7 @@ impl TryFrom<(Id, GeneratorConfig)> for Q3Components {
 impl Expand for Q3Components {
     type State = QStore;
 
-    fn expand(&mut self, state: Self::State) -> Result<Self::State, Box<dyn std::error::Error>> {
+    fn expand(&mut self, state: Self::State) -> Result<Self::State, Q3Error> {
         let state = match self {
             Self::List(list) => list.expand(state)?,
             Self::Query(query) => query.expand(state)?,
@@ -71,7 +74,7 @@ impl Expand for Q3Components {
 }
 
 impl TryFrom<(Id, QueryConfig)> for Q3Components {
-    type Error = Box<dyn std::error::Error>;
+    type Error = Q3Error;
 
     fn try_from(value: (Id, QueryConfig)) -> Result<Self, Self::Error> {
         let (id, config) = value;

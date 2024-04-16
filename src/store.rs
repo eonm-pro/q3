@@ -64,7 +64,7 @@ impl Expand for QStore {
     fn expand(
         &mut self,
         mut state: Self::State,
-    ) -> Result<Self::State, Box<dyn std::error::Error>> {
+    ) -> Result<Self::State, Q3Error> {
         while self
             .components
             .values()

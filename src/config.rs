@@ -3,8 +3,7 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 
-use crate::Id;
-use crate::QStore;
+use crate::{Id, QStore, Q3Error};
 
 use crate::components::Q3Components;
 
@@ -44,7 +43,7 @@ pub struct GeneratorConfig {
 }
 
 impl TryFrom<Config> for QStore {
-    type Error = Box<dyn std::error::Error>;
+    type Error = Q3Error;
 
     fn try_from(config: Config) -> Result<Self, Self::Error> {
         let mut qstore = QStore::new();
@@ -67,8 +66,6 @@ impl TryFrom<Config> for QStore {
             let query: Q3Components = ((Id(id), query)).try_into()?;
             qstore.insert(query);
         }
-
-        println!("{:?}", qstore);
 
         Ok(qstore)
     }

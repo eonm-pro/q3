@@ -1,3 +1,4 @@
+use crate::Q3Error;
 
 pub trait Expand
 where
@@ -5,5 +6,5 @@ where
 {
     type State;
 
-    fn expand(&mut self, state: Self::State) -> Result<Self::State, Box<dyn std::error::Error>>;
+    fn expand(&mut self, state: Self::State) -> Result<Self::State, Q3Error>;
 }

@@ -84,7 +84,7 @@ impl Expand for Query {
     fn expand(
         &mut self,
         mut state: Self::State,
-    ) -> Result<Self::State, Box<dyn std::error::Error>> {
+    ) -> Result<Self::State, Q3Error> {
         match self {
             Query::Raw {
                 id, ref mut tokens, ..
@@ -119,7 +119,7 @@ impl Expand for Vec<Q3Ast> {
     fn expand(
         &mut self,
         mut state: Self::State,
-    ) -> Result<Self::State, Box<dyn std::error::Error>> {
+    ) -> Result<Self::State, Q3Error> {
         for token in self.iter_mut() {
             match token {
                 Q3Ast::Other(_) => (),
@@ -139,7 +139,7 @@ impl Expand for Vec<Q3Ast> {
                         generator.expand(state.clone())?;
                         *token = Q3Ast::Other(generator.to_string())
                     }
-                    _ => return Err("id not found")?,
+                    _ => return Err(Q3Error::IdNotFound(id.to_string())),
                 },
             }
         }

@@ -3,6 +3,7 @@ use std::fmt::Display;
 use super::{Id, Identify};
 use crate::store::QStore;
 use crate::Expand;
+use crate::Q3Error;
 
 use pyo3::prelude::*;
 use pyo3::types::IntoPyDict;
@@ -32,17 +33,22 @@ impl Identify for Generator {
 impl Expand for Generator {
     type State = QStore;
 
-    fn expand(&mut self, state: QStore) -> Result<Self::State, Box<dyn std::error::Error>> {
+    fn expand(&mut self, state: QStore) -> Result<Self::State, Q3Error> {
         self.value = Some(Python::with_gil(|py| {
             let locals = [("value", None::<String>)].into_py_dict_bound(py);
-            py.run_bound(&self.script, Some(&locals), None)?;
+            py.run_bound(&self.script, Some(&locals), None).map_err(|err| {
+                Q3Error::PythonScriptFailed(err)
+            })?;
 
             let value: String = locals
-                .get_item("value")?
-                .ok_or("value not found")?
-                .extract()?;
+                .get_item("value")
+                .map_err(|err| {
+                   Q3Error::PythonScriptFailed(err) 
+                })?
+                .ok_or(Q3Error::PythonScriptVariableNotAssigned)?
+                .extract().map_err(|err|Q3Error::PythonScriptFailed(err))?;
 
-            Ok::<String, Box<dyn std::error::Error>>(value)
+            Ok::<String, Q3Error>(value)
         })?);
 
         Ok(state)
