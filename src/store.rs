@@ -8,7 +8,7 @@ use crate::{Expand, Id, Identify, Q3Components, Query};
 #[derive(Debug, Clone, PartialEq)]
 pub struct QStore {
     failed_expansions: HashSet<Id>,
-    components: HashMap<Id, Q3Components>,
+    pub components: HashMap<Id, Q3Components>,
 }
 
 impl QStore {

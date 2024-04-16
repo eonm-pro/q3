@@ -26,6 +26,11 @@ use cli::Cli;
 mod parser;
 use crate::parser::parse_query;
 
+use tabled::{
+    builder::Builder,
+    settings::{Modify, object::Rows, Alignment, Style, Width}
+};
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     pyo3::append_to_inittab!(q3);
     let args = Cli::parse();
@@ -36,12 +41,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     queries.expand()?;
 
+    let mut builder = Builder::default();
+    builder.push_record(["id".to_string(), "value".to_string()]);
+
     if let Some(id) = args.get {
-        if let Some(query) = queries.get(id) {
-            println!("{}", query);
+        if let Some(query) = queries.get(id.clone()) {
+            builder.push_record([id, query.to_string()]);
         }
+
+        let table = builder.build()
+            .with(Style::rounded())
+            .with(Width::wrap(180))
+            .modify(Rows::new(1..), Alignment::left())
+            .to_string();
+
+        println!("{}", table);
     } else {
-        println!("{}", queries);
+        for (id, query) in queries.components.iter() {
+            builder.push_record([query.to_string()]);
+        }
+
+        let table = builder.build()
+            .with(Style::rounded())
+            .with(Width::wrap(180))
+            .modify(Rows::new(1..), Alignment::left())
+            .to_string();
+
+        println!("{}", table);
     }
 
     Ok(())
