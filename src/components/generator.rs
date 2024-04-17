@@ -36,17 +36,15 @@ impl Expand for Generator {
     fn expand(&mut self, state: QStore) -> Result<Self::State, Q3Error> {
         self.value = Some(Python::with_gil(|py| {
             let locals = [("value", None::<String>)].into_py_dict_bound(py);
-            py.run_bound(&self.script, Some(&locals), None).map_err(|err| {
-                Q3Error::PythonScriptFailed(err)
-            })?;
+            py.run_bound(&self.script, Some(&locals), None)
+                .map_err(|err| Q3Error::PythonScriptFailed(err))?;
 
             let value: String = locals
                 .get_item("value")
-                .map_err(|err| {
-                   Q3Error::PythonScriptFailed(err) 
-                })?
+                .map_err(|err| Q3Error::PythonScriptFailed(err))?
                 .ok_or(Q3Error::PythonScriptVariableNotAssigned)?
-                .extract().map_err(|err|Q3Error::PythonScriptFailed(err))?;
+                .extract()
+                .map_err(|err| Q3Error::PythonScriptFailed(err))?;
 
             Ok::<String, Q3Error>(value)
         })?);

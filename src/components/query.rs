@@ -81,10 +81,7 @@ impl Display for Query {
 impl Expand for Query {
     type State = QStore;
 
-    fn expand(
-        &mut self,
-        mut state: Self::State,
-    ) -> Result<Self::State, Q3Error> {
+    fn expand(&mut self, mut state: Self::State) -> Result<Self::State, Q3Error> {
         match self {
             Query::Raw {
                 id, ref mut tokens, ..
@@ -116,10 +113,7 @@ impl Expand for Query {
 impl Expand for Vec<Q3Ast> {
     type State = QStore;
 
-    fn expand(
-        &mut self,
-        mut state: Self::State,
-    ) -> Result<Self::State, Q3Error> {
+    fn expand(&mut self, mut state: Self::State) -> Result<Self::State, Q3Error> {
         for token in self.iter_mut() {
             match token {
                 Q3Ast::Other(_) => (),

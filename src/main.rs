@@ -23,12 +23,21 @@ use store::*;
 mod cli;
 use cli::Cli;
 
+mod tui;
+use tui::*;
+
+use tabled::Table;
+
 mod parser;
 use crate::parser::parse_query;
 
-use tabled::{
-    builder::Builder,
-    settings::{Modify, object::Rows, Alignment, Style, Width}
+use tabled::settings::object::Rows;
+use tabled::settings::Style;
+use tabled::settings::{measurement::Percent, Width};
+
+use tabled::settings::{
+    peaker::{PriorityMax, PriorityMin},
+    Settings, Padding,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,34 +50,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     queries.expand()?;
 
-    let mut builder = Builder::default();
-    builder.push_record(["id".to_string(), "value".to_string()]);
+    let mut table_data: Vec<TableRow> = queries.into();
 
-    if let Some(id) = args.get {
-        if let Some(query) = queries.get(id.clone()) {
-            builder.push_record([id, query.to_string()]);
-        }
-
-        let table = builder.build()
-            .with(Style::rounded())
-            .with(Width::wrap(180))
-            .modify(Rows::new(1..), Alignment::left())
-            .to_string();
-
-        println!("{}", table);
+    let mut table = if let Some(id) = args.get {
+        table_data = table_data
+            .into_iter()
+            .filter(|elem| elem.id == id)
+            .collect();
+        Table::new(table_data)
     } else {
-        for (id, query) in queries.components.iter() {
-            builder.push_record([query.to_string()]);
-        }
+        Table::new(table_data)
+    };
 
-        let table = builder.build()
-            .with(Style::rounded())
-            .with(Width::wrap(180))
-            .modify(Rows::new(1..), Alignment::left())
-            .to_string();
+    let settings = Settings::new(
+        Width::increase(40).priority::<PriorityMin>(),
+        Width::wrap(Percent(70)).priority::<PriorityMax>(),
+    );
 
-        println!("{}", table);
-    }
+    table
+        .with(settings)
+        .modify(Rows::new(1..), Padding::new(0, 0, 0, 1))
+        .with(Style::rounded());
+
+    println!("{}", table.to_string());
 
     Ok(())
 }

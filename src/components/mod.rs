@@ -13,7 +13,7 @@ use crate::{
     config::{GeneratorConfig, ListConfig, QueryConfig},
     expand::Expand,
     store::QStore,
-    Q3Error
+    Q3Error,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -30,9 +30,8 @@ impl TryFrom<(Id, ListConfig)> for Q3Components {
         let (id, config) = value;
 
         let value = match config.data {
-            crate::config::PathOrValue::File(path) => std::fs::read_to_string(path).map_err(|err| {
-                Q3Error::FailedToReadDataFromDisk(err)
-            })?,
+            crate::config::PathOrValue::File(path) => std::fs::read_to_string(path)
+                .map_err(|err| Q3Error::FailedToReadDataFromDisk(err))?,
             crate::config::PathOrValue::Value(data) => data,
         };
 

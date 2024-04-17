@@ -41,17 +41,15 @@ impl Expand for List {
                     .collect::<Vec<&str>>();
 
                 let locals = [("value", list_data.clone())].into_py_dict_bound(py);
-                py.run_bound(script, Some(&locals), None).map_err(|err| {
-                    Q3Error::PythonScriptFailed(err)
-                })?;
+                py.run_bound(script, Some(&locals), None)
+                    .map_err(|err| Q3Error::PythonScriptFailed(err))?;
 
                 let value: String = locals
                     .get_item("value")
-                    .map_err(|err| {
-                       Q3Error::PythonScriptFailed(err) 
-                    })?
+                    .map_err(|err| Q3Error::PythonScriptFailed(err))?
                     .ok_or(Q3Error::PythonScriptVariableNotAssigned)?
-                    .extract().map_err(|err|Q3Error::PythonScriptFailed(err))?;
+                    .extract()
+                    .map_err(|err| Q3Error::PythonScriptFailed(err))?;
 
                 Ok::<String, Q3Error>(value)
             })?;

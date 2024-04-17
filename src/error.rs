@@ -17,5 +17,5 @@ pub enum Q3Error {
     #[error("Variable `value` not assigned inside python script")]
     PythonScriptVariableNotAssigned,
     #[error("Python script failed: {0}")]
-    PythonScriptFailed(#[from] pyo3::prelude::PyErr)
+    PythonScriptFailed(#[from] pyo3::prelude::PyErr),
 }

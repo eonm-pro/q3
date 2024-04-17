@@ -61,10 +61,7 @@ impl Display for QStore {
 impl Expand for QStore {
     type State = Self;
 
-    fn expand(
-        &mut self,
-        mut state: Self::State,
-    ) -> Result<Self::State, Q3Error> {
+    fn expand(&mut self, mut state: Self::State) -> Result<Self::State, Q3Error> {
         while self
             .components
             .values()

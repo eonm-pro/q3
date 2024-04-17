@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 
-use crate::{Id, QStore, Q3Error};
+use crate::{Id, Q3Error, QStore};
 
 use crate::components::Q3Components;
 
