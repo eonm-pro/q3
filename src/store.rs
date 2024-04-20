@@ -1,4 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use indexmap::IndexMap;
+
+use std::collections::HashSet;
 use std::fmt::Display;
 
 use crate::error::Q3Error;
@@ -8,13 +10,13 @@ use crate::{Expand, Id, Identify, Q3Components, Query};
 #[derive(Debug, Clone, PartialEq)]
 pub struct QStore {
     failed_expansions: HashSet<Id>,
-    pub components: HashMap<Id, Q3Components>,
+    pub components: IndexMap<Id, Q3Components>,
 }
 
 impl QStore {
     pub fn new() -> Self {
         Self {
-            components: HashMap::default(),
+            components: IndexMap::new(),
             failed_expansions: HashSet::new(),
         }
     }

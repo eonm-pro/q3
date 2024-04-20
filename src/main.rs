@@ -50,28 +50,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     queries.expand()?;
 
     let table_data: Vec<TableRow> = queries.into();
-    //
-    // let mut table = if let Some(id) = args.get {
-    //     table_data = table_data
-    //         .into_iter()
-    //         .filter(|elem| elem.id == id)
-    //         .collect();
-    //     Table::new(table_data)
-    // } else {
-    //     Table::new(table_data)
-    // };
-    //
-    // let settings = Settings::new(
-    //     Width::increase(40).priority::<PriorityMin>(),
-    //     Width::wrap(Percent(70)).priority::<PriorityMax>(),
-    // );
-    //
-    // table
-    //     .with(settings)
-    //     .modify(Rows::new(1..), Padding::new(0, 0, 0, 1))
-    //     .with(Style::rounded());
-
-    // println!("{}", table.to_string());
 
     enable_raw_mode()?;
     let mut stdout = io::stdout();

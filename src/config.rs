@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use serde::Deserialize;
@@ -6,15 +5,17 @@ use serde::Deserialize;
 use crate::{Id, Q3Error, QStore};
 
 use crate::components::Q3Components;
+use indexmap::IndexMap;
 
 #[derive(Debug, Deserialize)]
-pub struct Config {
-    #[serde(rename = "query")]
-    queries: HashMap<String, QueryConfig>,
-    #[serde(rename = "list")]
-    lists: Option<HashMap<String, ListConfig>>,
-    #[serde(rename = "generator")]
-    generators: Option<HashMap<String, GeneratorConfig>>,
+pub struct Config(IndexMap<String, ConfigElement>);
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ConfigElement {
+    Query(QueryConfig),
+    List(ListConfig),
+    Generator(GeneratorConfig),
 }
 
 #[derive(Debug, Deserialize)]
@@ -48,23 +49,14 @@ impl TryFrom<Config> for QStore {
     fn try_from(config: Config) -> Result<Self, Self::Error> {
         let mut qstore = QStore::new();
 
-        if let Some(lists) = config.lists {
-            for (id, list_config) in lists {
-                let list: Q3Components = ((Id(id), list_config)).try_into()?;
-                qstore.insert(list);
-            }
-        }
+        for (key, elem) in config.0 {
+            let component: Q3Components = match elem {
+                ConfigElement::Query(config) => (Id(key), config).try_into()?,
+                ConfigElement::List(config) => (Id(key), config).try_into()?,
+                ConfigElement::Generator(config) => (Id(key), config).try_into()?,
+            };
 
-        if let Some(generators) = config.generators {
-            for (id, generator_config) in generators {
-                let generator: Q3Components = ((Id(id), generator_config)).try_into()?;
-                qstore.insert(generator);
-            }
-        }
-
-        for (id, query) in config.queries {
-            let query: Q3Components = ((Id(id), query)).try_into()?;
-            qstore.insert(query);
+            qstore.insert(component);
         }
 
         Ok(qstore)

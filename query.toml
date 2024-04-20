@@ -1,5 +1,5 @@
-[list]
-[list.lorem]
+# [list]
+[lorem.list]
 value = "lorem\t\tlorem ipsum dolor sit amet"
 separator = " "
 script =  """
@@ -11,17 +11,18 @@ value = quote(value)
 value = join_or(value)
 """
 
-[generator]
-[generator.e]
+# [generator]
+[e.generator]
 script = """
 value = "lorem ipsum from generator"
 """
 
+[q2.query]
+value = " title:(#{query}) #{e}"
+
 [query.query]
 value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e}"
 
-[query.q2]
-value = " title:(#{query}) #{e}"
 
 # [query.q1]
 # value = "lorem ipsum"
