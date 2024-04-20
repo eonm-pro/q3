@@ -25,6 +25,12 @@ impl QStore {
         self.components.get(&Id(id.into())).cloned()
     }
 
+    pub fn get_raw<S: Into<String>>(&self, id: S) -> Option<String> {
+        self.components
+            .get(&Id(id.into()))
+            .map(|component| component.raw())
+    }
+
     pub fn insert(&mut self, component: Q3Components) {
         self.components
             .insert(component.get_id().clone(), component);

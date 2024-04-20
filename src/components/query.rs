@@ -84,7 +84,9 @@ impl Expand for Query {
     fn expand(&mut self, mut state: Self::State) -> Result<Self::State, Q3Error> {
         match self {
             Query::Raw {
-                id, ref mut tokens, ..
+                id,
+                ref mut tokens,
+                query,
             } => {
                 state.set_failed_expansion(id.clone())?;
                 state = tokens.expand(state)?;
@@ -95,11 +97,11 @@ impl Expand for Query {
                     *self = Query::Expanded {
                         id: id.to_owned(),
                         tokens: tokens.to_vec(),
-                        query: tokens
-                            .iter()
-                            .map(|t| t.to_string())
-                            .collect::<Vec<String>>()
-                            .join(""),
+                        query: query.to_owned(), // query: tokens
+                                                 //     .iter()
+                                                 //     .map(|t| t.to_string())
+                                                 //     .collect::<Vec<String>>()
+                                                 //     .join(""),
                     }
                 }
             }

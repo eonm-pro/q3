@@ -17,6 +17,7 @@ use unicode_width::UnicodeWidthStr;
 pub struct TableRow {
     pub id: String,
     query: String,
+    raw_query: String,
 }
 
 impl From<QStore> for Vec<TableRow> {
@@ -27,6 +28,7 @@ impl From<QStore> for Vec<TableRow> {
             .map(|(id, value)| TableRow {
                 id: id.to_string(),
                 query: value.to_string(),
+                raw_query: value.raw(),
             })
             .collect()
     }
@@ -72,7 +74,7 @@ impl TableColors {
 
 impl TableRow {
     const fn ref_array(&self) -> [&String; 2] {
-        [&self.id, &self.query]
+        [&self.id, &self.raw_query]
     }
 
     fn id(&self) -> &str {
@@ -81,6 +83,10 @@ impl TableRow {
 
     fn query(&self) -> &str {
         &self.query
+    }
+
+    fn raw_query(&self) -> &str {
+        &self.raw_query
     }
 }
 
@@ -179,12 +185,18 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Resu
 }
 
 fn ui(f: &mut Frame, app: &mut App) {
-    let rects = Layout::vertical([Constraint::Min(5), Constraint::Length(3)]).split(f.size());
+    let rects = Layout::vertical([
+        Constraint::Min(5),
+        Constraint::Min(5),
+        Constraint::Length(3),
+    ])
+    .split(f.size());
 
     app.set_colors();
     render_table(f, app, rects[0]);
     render_scrollbar(f, app, rects[0]);
-    render_footer(f, app, rects[1]);
+    render_preview(f, app, rects[1]);
+    render_footer(f, app, rects[2]);
 }
 
 fn render_table(f: &mut Frame, app: &mut App, area: Rect) {
@@ -250,7 +262,7 @@ fn constraint_len_calculator(items: &[TableRow]) -> (u16, u16) {
 
     let query_len = items
         .iter()
-        .map(TableRow::query)
+        .map(TableRow::raw_query)
         .flat_map(str::lines)
         .map(UnicodeWidthStr::width)
         .max()
@@ -283,6 +295,25 @@ fn render_footer(f: &mut Frame, app: &App, area: Rect) {
                 .borders(Borders::ALL)
                 .border_style(Style::new().fg(app.colors.footer_border_color))
                 .border_type(BorderType::Double),
+        );
+    f.render_widget(info_footer, area);
+}
+
+fn render_preview(f: &mut Frame, app: &App, area: Rect) {
+    let selected_text = match app.state.selected() {
+        Some(selected) => app.items[selected].query(),
+        None => "",
+    };
+
+    let info_footer = Paragraph::new(selected_text)
+        .wrap(Wrap { trim: true })
+        .scroll((0, 0))
+        .style(Style::new().fg(app.colors.row_fg).bg(app.colors.buffer_bg))
+        .block(
+            Block::default()
+                .borders(Borders::TOP)
+                .border_style(Style::new().fg(app.colors.footer_border_color))
+                .border_type(BorderType::Plain),
         );
     f.render_widget(info_footer, area);
 }

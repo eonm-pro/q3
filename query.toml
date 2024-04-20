@@ -24,6 +24,24 @@ value = " title:(#{query}) #{e}"
 value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e}"
 
 
+[1.query]
+value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e}"
+
+[2.query]
+value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e}"
+
+
+[3.query]
+value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e}"
+
+
+[4.query]
+value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e}"
+
+
+
+
+
 # [query.q1]
 # value = "lorem ipsum"
 #

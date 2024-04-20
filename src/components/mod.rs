@@ -23,6 +23,17 @@ pub enum Q3Components {
     Generator(Generator),
 }
 
+impl Q3Components {
+    pub fn raw(&self) -> String {
+        match self {
+            Q3Components::List(_) => "[list]".into(),
+            Q3Components::Generator(_) => "[generator]".into(),
+            Q3Components::Query(Query::Expanded { query, .. }) => query.to_owned(),
+            _ => "".into(),
+        }
+    }
+}
+
 impl TryFrom<(Id, ListConfig)> for Q3Components {
     type Error = Q3Error;
 
