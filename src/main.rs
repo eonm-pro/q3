@@ -43,14 +43,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     pyo3::append_to_inittab!(q3);
     let args = Cli::parse();
 
-    let config = std::fs::read_to_string(args.nsq.clone())?;
-    let config: Config = toml::from_str(&config)?;
-    let mut queries: QStore = config.try_into()?;
-
-    queries.expand()?;
-
-    let table_data: Vec<TableRow> = queries.into();
-
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -58,7 +50,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     // create app and run it
-    let app = App::new(table_data, format!("{}", args.nsq.display()));
+    let file_path = args.path;
+
+    let app = App::new(file_path)?;
     let res = run_app(&mut terminal, app);
 
     // restore terminal

@@ -1,106 +1,74 @@
+use super::App;
+
 use ratatui::{
-    style::{Color, Style},
+    style::{Color, Stylize},
     text::{Line, Span},
     widgets::Widget,
 };
 
 #[derive(Clone)]
-pub struct Footer(pub Vec<FooterEntry>);
-
-#[derive(Clone)]
-pub struct FooterEntry {
-    before: Option<char>,
-    text: String,
-    after: Option<char>,
-    bg_color: Color,
-    text_color: Color,
+pub struct Footer<'a> {
+    pub entries: Vec<Span<'a>>,
+    pub separator: char,
+    pub terminator: char,
 }
 
-impl FooterEntry {
-    pub fn set_before(&mut self, char: char) -> &mut Self {
-        self.before = Some(char);
-        self
-    }
+impl From<&App> for Footer<'_> {
+    fn from(app: &App) -> Self {
+        let mut entries = vec![Span::from(" q3 ")
+            .bg(app.colors.alt_row_color)
+            .fg(Color::White)];
 
-    pub fn set_after(&mut self, char: char) -> &mut Self {
-        self.after = Some(char);
-        self
-    }
+        let mut meta_spans: Vec<Span> = app.file.clone().into();
+        meta_spans = meta_spans
+            .into_iter()
+            .map(|span| span.bg(app.colors.header_bg).fg(Color::White))
+            .collect();
 
-    pub fn set_text<S: Into<String>>(&mut self, text: S) -> &mut Self {
-        self.text = text.into();
-        self
-    }
+        entries.append(&mut meta_spans);
 
-    pub fn set_bg_color<C: Into<Color>>(&mut self, color: C) -> &mut Self {
-        self.bg_color = color.into();
-        self
-    }
+        if let Some(message) = &app.message {
+            let mut spans: Vec<Span> = message.clone().into();
 
-    pub fn set_text_color<C: Into<Color>>(&mut self, color: C) -> &mut Self {
-        self.text_color = color.into();
-        self
-    }
-}
+            spans = spans
+                .into_iter()
+                .map(|span| span.bg(app.colors.selected_style_fg))
+                .collect();
 
-impl Default for FooterEntry {
-    fn default() -> Self {
-        FooterEntry {
-            before: None,
-            text: "".to_string(),
-            after: Some(''),
-            bg_color: Color::default(),
-            text_color: Color::default(),
+            entries.append(&mut spans);
+        }
+
+        Self {
+            entries,
+            separator: '',
+            terminator: '',
         }
     }
 }
 
-pub struct FooterEntries<'a>(Vec<Span<'a>>);
-
-impl<'a> Into<FooterEntries<'a>> for (FooterEntry, Option<Color>) {
-    fn into(self) -> FooterEntries<'a> {
-        let (entry, next_color) = self;
-        let mut spans = Vec::with_capacity(3);
-
-        if let Some(before) = entry.before {
-            spans.push(Span::styled(
-                before.to_string(),
-                Style::default().fg(entry.bg_color),
-            ))
-        }
-
-        spans.push(Span::styled(
-            entry.text,
-            Style::default().fg(entry.text_color).bg(entry.bg_color),
-        ));
-
-        match (entry.after, next_color) {
-            (Some(after), Some(color)) => spans.push(Span::styled(
-                after.to_string(),
-                Style::default().fg(entry.bg_color).bg(color),
-            )),
-            (Some(after), None) => spans.push(Span::styled(
-                after.to_string(),
-                Style::default().fg(entry.bg_color),
-            )),
-            _ => (),
-        }
-
-        FooterEntries(spans)
-    }
-}
-
-impl Widget for Footer {
+impl<'a> Widget for Footer<'a> {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,
     {
         let mut line_elements = vec![];
-        let mut iter = self.0.into_iter().peekable();
+        let mut iter = self.entries.into_iter().peekable();
 
-        while let Some(entry) = iter.next() {
-            let next_color = iter.peek().map(|next_entry| next_entry.bg_color).to_owned();
-            line_elements.append(&mut Into::<FooterEntries>::into((entry, next_color)).0)
+        while let (Some(entry), next_element) = (iter.next(), iter.peek()) {
+            let fg = entry.style.bg.unwrap_or_default();
+
+            match next_element {
+                Some(next_element) => {
+                    let next_color = next_element.style.bg.unwrap_or_default();
+                    line_elements.push(entry);
+                    line_elements
+                        .push(Span::from(self.separator.to_string()).bg(next_color).fg(fg));
+                }
+                None => {
+                    line_elements.push(entry);
+                    line_elements.push(Span::from(self.terminator.to_string()).fg(fg));
+                }
+            }
         }
 
         let line = Line::from(line_elements);

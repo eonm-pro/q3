@@ -1,16 +1,25 @@
 use crate::QStore;
 use arboard::Clipboard;
+
+use crossterm::event::poll;
+use std::time::Duration;
+
 mod footer;
+mod message;
+mod meta;
+mod preview;
 
 use footer::*;
 
-use std::io;
+use std::{io, path::PathBuf};
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 
 use ratatui::{prelude::*, widgets::*};
 use style::palette::tailwind;
 use unicode_width::UnicodeWidthStr;
+
+use self::{meta::Meta, preview::Preview};
 
 pub struct TableRow {
     pub id: String,
@@ -88,7 +97,8 @@ impl TableRow {
 
 pub struct App {
     state: TableState,
-    file: String,
+    file: Meta,
+    message: Option<message::Message>,
     items: Vec<TableRow>,
     longest_item_lens: (u16, u16), // order is (id, query)
     scroll_state: ScrollbarState,
@@ -97,16 +107,54 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(data: Vec<TableRow>, file: String) -> Self {
-        Self {
+    pub fn reload(mut self) -> Result<Self, Box<dyn std::error::Error>> {
+        let config = std::fs::read_to_string(&self.file.path)?;
+        let config: crate::Config = toml::from_str(&config)?;
+        let mut queries: QStore = config.try_into()?;
+
+        let items = self.items;
+
+        let previous_selected_id = { self.state.selected().map(|index| items[index].id()) };
+
+        self.items = Into::<Vec<TableRow>>::into(queries.expand()?);
+
+        let selected = self.items.iter().enumerate().find_map(|(index, elem)| {
+            if Some(elem.id()) == previous_selected_id {
+                Some(index)
+            } else {
+                None
+            }
+        });
+
+        self.scroll_state = self
+            .scroll_state
+            .position(selected.map(|index| index * ITEM_HEIGHT).unwrap_or(0));
+
+        self.file.reset();
+        self.state.select(selected);
+
+        Ok(self)
+    }
+
+    pub fn new(file: PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
+        let config = std::fs::read_to_string(&file)?;
+        let config: crate::Config = toml::from_str(&config)?;
+        let mut queries: QStore = config.try_into()?;
+
+        queries.expand()?;
+
+        let data: Vec<TableRow> = queries.into();
+
+        Ok(Self {
             state: TableState::default().with_selected(0),
-            file,
+            file: file.try_into()?,
+            message: None,
             longest_item_lens: constraint_len_calculator(&data),
             scroll_state: ScrollbarState::new((data.len() - 1) * ITEM_HEIGHT),
             colors: TableColors::new(&PALETTES[0]),
             color_index: 0,
             items: data,
-        }
+        })
     }
     pub fn next(&mut self) {
         let i = match self.state.selected() {
@@ -138,13 +186,15 @@ impl App {
         self.scroll_state = self.scroll_state.position(i * ITEM_HEIGHT);
     }
 
-    pub fn copy_to_clipboard(&mut self) {
-        let mut clipboard = Clipboard::new().unwrap();
+    pub fn copy_to_clipboard(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut clipboard = Clipboard::new()?;
 
         if let Some(selected) = self.state.selected() {
             let query = self.items[selected].query();
-            clipboard.set_text(query).unwrap();
+            clipboard.set_text(query)?;
         }
+
+        Ok(())
     }
 
     pub fn next_color(&mut self) {
@@ -161,21 +211,37 @@ impl App {
     }
 }
 
-pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+pub fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    mut app: App,
+) -> Result<(), Box<dyn std::error::Error>> {
     loop {
+        if app.file.has_changed()? {
+            app = app.reload()?;
+        };
         terminal.draw(|f| ui(f, &mut app))?;
 
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press {
-                use KeyCode::*;
-                match key.code {
-                    Char('q') | Esc => return Ok(()),
-                    Char('j') | Down => app.next(),
-                    Char('k') | Up => app.previous(),
-                    Char('l') | Right => app.next_color(),
-                    Char('h') | Left => app.previous_color(),
-                    Char('c') | Enter => app.copy_to_clipboard(),
-                    _ => {}
+        if poll(Duration::from_millis(500))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    use KeyCode::*;
+                    match key.code {
+                        Char('q') | Esc => return Ok(()),
+                        Char('j') | Down => app.next(),
+                        Char('k') | Up => app.previous(),
+                        Char('l') | Right => app.next_color(),
+                        Char('h') | Left => app.previous_color(),
+                        Char('c') | Enter => match app.copy_to_clipboard() {
+                            Ok(_) => {
+                                app.message = Some(message::Message::Info(
+                                    " data copied to clipboard ".into(),
+                                ))
+                            }
+                            Err(e) => app.message = Some(message::Message::Error(e.to_string())),
+                        },
+                        Char('r') => app = app.reload()?,
+                        _ => {}
+                    }
                 }
             }
         }
@@ -284,43 +350,10 @@ fn render_scrollbar(f: &mut Frame, app: &mut App, area: Rect) {
     );
 }
 
-fn render_footer(f: &mut Frame, app: &App, area: Rect) {
-    let footer = Footer(vec![
-        FooterEntry::default()
-            .set_text(" q3 ")
-            .set_bg_color(app.colors.alt_row_color)
-            .set_text_color(Color::White)
-            .clone(),
-        FooterEntry::default()
-            .set_text(&app.file)
-            .set_bg_color(app.colors.header_bg)
-            .set_text_color(Color::White)
-            .clone(),
-        FooterEntry::default()
-            .set_text(" lorem ipsum ")
-            .set_bg_color(app.colors.selected_style_fg)
-            .set_text_color(Color::Black)
-            .set_after('')
-            .clone(),
-    ]);
-
-    f.render_widget(footer, area);
+fn render_preview(f: &mut Frame, app: &App, area: Rect) {
+    f.render_widget(Preview::from(app), area);
 }
 
-fn render_preview(f: &mut Frame, app: &App, area: Rect) {
-    let selected_text = match app.state.selected() {
-        Some(selected) => app.items[selected].query(),
-        None => "",
-    };
-
-    let preview = Paragraph::new(selected_text)
-        .wrap(Wrap { trim: true })
-        .style(Style::new().fg(app.colors.row_fg).bg(app.colors.buffer_bg))
-        .block(
-            Block::default()
-                .borders(Borders::TOP)
-                .border_style(Style::new().fg(app.colors.footer_border_color))
-                .border_type(BorderType::Plain),
-        );
-    f.render_widget(preview, area);
+fn render_footer(f: &mut Frame, app: &App, area: Rect) {
+    f.render_widget(Footer::from(app), area);
 }
