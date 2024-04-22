@@ -1,15 +1,13 @@
 use crate::QStore;
 use arboard::Clipboard;
+mod footer;
 
-use std::{error::Error, io};
+use footer::*;
 
-use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
+use std::io;
 
-// use itertools::Itertools;
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+
 use ratatui::{prelude::*, widgets::*};
 use style::palette::tailwind;
 use unicode_width::UnicodeWidthStr;
@@ -34,15 +32,13 @@ impl From<QStore> for Vec<TableRow> {
     }
 }
 
-const PALETTES: [tailwind::Palette; 4] = [
+const PALETTES: [tailwind::Palette; 5] = [
     tailwind::BLUE,
     tailwind::EMERALD,
     tailwind::INDIGO,
     tailwind::RED,
+    tailwind::SKY,
 ];
-
-const INFO_TEXT: &str =
-    "(Esc) quit | (↲) copy | (↑) move up | (↓) move down | (→) next color | (←) previous color";
 
 const ITEM_HEIGHT: usize = 4;
 
@@ -92,6 +88,7 @@ impl TableRow {
 
 pub struct App {
     state: TableState,
+    file: String,
     items: Vec<TableRow>,
     longest_item_lens: (u16, u16), // order is (id, query)
     scroll_state: ScrollbarState,
@@ -100,9 +97,10 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(data: Vec<TableRow>) -> Self {
+    pub fn new(data: Vec<TableRow>, file: String) -> Self {
         Self {
             state: TableState::default().with_selected(0),
+            file,
             longest_item_lens: constraint_len_calculator(&data),
             scroll_state: ScrollbarState::new((data.len() - 1) * ITEM_HEIGHT),
             colors: TableColors::new(&PALETTES[0]),
@@ -188,7 +186,7 @@ fn ui(f: &mut Frame, app: &mut App) {
     let rects = Layout::vertical([
         Constraint::Min(5),
         Constraint::Min(5),
-        Constraint::Length(3),
+        Constraint::Length(1),
     ])
     .split(f.size());
 
@@ -287,16 +285,26 @@ fn render_scrollbar(f: &mut Frame, app: &mut App, area: Rect) {
 }
 
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
-    let info_footer = Paragraph::new(Line::from(INFO_TEXT))
-        .style(Style::new().fg(app.colors.row_fg).bg(app.colors.buffer_bg))
-        .centered()
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::new().fg(app.colors.footer_border_color))
-                .border_type(BorderType::Double),
-        );
-    f.render_widget(info_footer, area);
+    let footer = Footer(vec![
+        FooterEntry::default()
+            .set_text(" q3 ")
+            .set_bg_color(app.colors.alt_row_color)
+            .set_text_color(Color::White)
+            .clone(),
+        FooterEntry::default()
+            .set_text(&app.file)
+            .set_bg_color(app.colors.header_bg)
+            .set_text_color(Color::White)
+            .clone(),
+        FooterEntry::default()
+            .set_text(" lorem ipsum ")
+            .set_bg_color(app.colors.selected_style_fg)
+            .set_text_color(Color::Black)
+            .set_after('')
+            .clone(),
+    ]);
+
+    f.render_widget(footer, area);
 }
 
 fn render_preview(f: &mut Frame, app: &App, area: Rect) {
@@ -305,9 +313,8 @@ fn render_preview(f: &mut Frame, app: &App, area: Rect) {
         None => "",
     };
 
-    let info_footer = Paragraph::new(selected_text)
+    let preview = Paragraph::new(selected_text)
         .wrap(Wrap { trim: true })
-        .scroll((0, 0))
         .style(Style::new().fg(app.colors.row_fg).bg(app.colors.buffer_bg))
         .block(
             Block::default()
@@ -315,5 +322,5 @@ fn render_preview(f: &mut Frame, app: &App, area: Rect) {
                 .border_style(Style::new().fg(app.colors.footer_border_color))
                 .border_type(BorderType::Plain),
         );
-    f.render_widget(info_footer, area);
+    f.render_widget(preview, area);
 }
