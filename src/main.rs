@@ -26,10 +26,10 @@ use cli::Cli;
 mod tui;
 use tui::*;
 
-use std::{error::Error, io};
+use std::io;
 
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };

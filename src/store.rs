@@ -13,6 +13,12 @@ pub struct QStore {
     pub components: IndexMap<Id, Q3Components>,
 }
 
+impl Default for QStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl QStore {
     pub fn new() -> Self {
         Self {

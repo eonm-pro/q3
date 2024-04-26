@@ -22,12 +22,12 @@ value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e}"
 [q2.query]
 value = "title:(#{query}) #{e}"
 
+[1.query]
+value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e} e"
 
 [4.query]
 value = "title:(#{lorem}) OR bstract:(#{lorem}) #{e}"
 
-[1.query]
-value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e} xx"
 
 [2.query]
 value = "title:(#{lorem}) OR abstract:(#{lorem}) #{e}"

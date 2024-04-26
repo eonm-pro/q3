@@ -10,7 +10,7 @@ mod query;
 pub use query::Query;
 
 use crate::{
-    config::{GeneratorConfig, ListConfig, QueryConfig},
+    config::{GeneratorConfig, ListConfig, PathOrValue, QueryConfig},
     expand::Expand,
     store::QStore,
     Q3Error,
@@ -41,17 +41,21 @@ impl TryFrom<(Id, ListConfig)> for Q3Components {
         let (id, config) = value;
 
         let value = match config.data {
-            crate::config::PathOrValue::File(path) => std::fs::read_to_string(path)
-                .map_err(|err| Q3Error::FailedToReadDataFromDisk(err))?,
-            crate::config::PathOrValue::Value(data) => data,
+            PathOrValue::File(path) => {
+                std::fs::read_to_string(path).map_err(Q3Error::FailedToReadDataFromDisk)?
+            }
+            PathOrValue::Value(data) => data,
         };
 
-        Ok(Self::List(List {
-            id,
-            value,
-            separator: config.separator,
-            script: config.script,
-        }))
+        Ok(match config.script {
+            Some(script) => Self::List(List::Raw {
+                id,
+                value,
+                separator: config.separator,
+                script: Some(script),
+            }),
+            None => Self::List(List::Expanded { id, value }),
+        })
     }
 }
 

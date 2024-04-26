@@ -97,11 +97,7 @@ impl Expand for Query {
                     *self = Query::Expanded {
                         id: id.to_owned(),
                         tokens: tokens.to_vec(),
-                        query: query.to_owned(), // query: tokens
-                                                 //     .iter()
-                                                 //     .map(|t| t.to_string())
-                                                 //     .collect::<Vec<String>>()
-                                                 //     .join(""),
+                        query: query.to_owned(),
                     }
                 }
             }
@@ -127,8 +123,7 @@ impl Expand for Vec<Q3Ast> {
                         state = raw_query.clone().expand(state)?;
                     }
                     Some(Q3Components::List(mut list)) => {
-                        list.expand(state.clone())?;
-
+                        state = list.expand(state)?;
                         *token = Q3Ast::Other(list.to_string())
                     }
                     Some(Q3Components::Generator(mut generator)) => {

@@ -34,7 +34,7 @@ pub fn parse_any(input: &str) -> IResult<&str, Q3Ast> {
     )(input)
 }
 
-pub fn parse_query<'a>(input: &'a str) -> Result<Vec<Q3Ast>, Q3Error> {
+pub fn parse_query(input: &str) -> Result<Vec<Q3Ast>, Q3Error> {
     let (_rest, matched) = all_consuming(many_till(alt((parse_id, parse_any)), eof))(input)
         .map_err(|_err| Q3Error::FailedToParseQuery)?;
     Ok(matched.0)

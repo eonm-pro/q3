@@ -11,7 +11,7 @@ mod preview;
 
 use footer::*;
 
-use std::{io, path::PathBuf};
+use std::path::PathBuf;
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 
@@ -132,6 +132,7 @@ impl App {
 
         self.file.reset();
         self.state.select(selected);
+        self.message = None;
 
         Ok(self)
     }

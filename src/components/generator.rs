@@ -37,14 +37,14 @@ impl Expand for Generator {
         self.value = Some(Python::with_gil(|py| {
             let locals = [("value", None::<String>)].into_py_dict_bound(py);
             py.run_bound(&self.script, Some(&locals), None)
-                .map_err(|err| Q3Error::PythonScriptFailed(err))?;
+                .map_err(Q3Error::PythonScriptFailed)?;
 
             let value: String = locals
                 .get_item("value")
-                .map_err(|err| Q3Error::PythonScriptFailed(err))?
+                .map_err(Q3Error::PythonScriptFailed)?
                 .ok_or(Q3Error::PythonScriptVariableNotAssigned)?
                 .extract()
-                .map_err(|err| Q3Error::PythonScriptFailed(err))?;
+                .map_err(Q3Error::PythonScriptFailed)?;
 
             Ok::<String, Q3Error>(value)
         })?);

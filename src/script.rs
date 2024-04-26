@@ -19,6 +19,24 @@ pub fn trim(mut input: Vec<String>) -> Vec<String> {
 }
 
 #[pyfunction]
+pub fn prepend(mut input: Vec<String>, value: String) -> Vec<String> {
+    input
+        .iter_mut()
+        .for_each(|elem| *elem = format!("{value}{}", elem));
+
+    input
+}
+
+#[pyfunction]
+pub fn append(mut input: Vec<String>, value: String) -> Vec<String> {
+    input
+        .iter_mut()
+        .for_each(|elem| *elem = format!("{}{value}", elem));
+
+    input
+}
+
+#[pyfunction]
 pub fn normalize_spaces(mut input: Vec<String>) -> Vec<String> {
     input.iter_mut().for_each(|elem| {
         *elem = elem.split_whitespace().intersperse(" ").collect();
@@ -43,6 +61,16 @@ pub fn join_and(input: Vec<String>) -> String {
     input.join(" AND ")
 }
 
+#[pyfunction]
+pub fn filter_commented(input: Vec<String>) -> Vec<String> {
+    input.into_iter().filter(|elem| !elem.starts_with("#")).collect()
+}
+
+#[pyfunction]
+pub fn filter_empty(input: Vec<String>) -> Vec<String> {
+    input.into_iter().filter(|elem| !elem.is_empty()).collect()
+}
+
 #[pymodule]
 pub fn q3(q3_module: &Bound<'_, PyModule>) -> PyResult<()> {
     q3_module.add_function(wrap_pyfunction!(quote, q3_module)?)?;
@@ -51,5 +79,9 @@ pub fn q3(q3_module: &Bound<'_, PyModule>) -> PyResult<()> {
     q3_module.add_function(wrap_pyfunction!(uniq, q3_module)?)?;
     q3_module.add_function(wrap_pyfunction!(trim, q3_module)?)?;
     q3_module.add_function(wrap_pyfunction!(normalize_spaces, q3_module)?)?;
+    q3_module.add_function(wrap_pyfunction!(filter_commented, q3_module)?)?;
+    q3_module.add_function(wrap_pyfunction!(filter_empty, q3_module)?)?;
+    q3_module.add_function(wrap_pyfunction!(prepend, q3_module)?)?;
+    q3_module.add_function(wrap_pyfunction!(append, q3_module)?)?;
     Ok(())
 }
